@@ -1,16 +1,30 @@
 'use strict';
 
 // Imports dependencies and set up http server
-const
-  express = require('express'),
-  bodyParser = require('body-parser'),
-  app = express().use(bodyParser.json()); // creates express http server
+var sslDirectory = "/usr/local/nginx/conf/ssl/cvnlnode.phocode.com";
+const fs = require('fs');
+const app = require('express');
+const https = require('https');
+const fs = require('fs');
+const options = {
+  key: fs.readFileSync(sslDirectory + '/cvnlnode.phocode.com-acme.key', 'utf8'),
+ cert: fs.readFileSync(sslDirectory + '/cvnlnode.phocode.com-acme.cer', 'utf8')
+};
+
+var server = https.createServer(options, app);
+
+server.listen(process.env.PORT || 1337, () => console.log('webhook is listening'));
+// const
+//   express = require('express'),
+//   bodyParser = require('body-parser'),
+//   app = express().use(bodyParser.json()); // creates express http server
+
 
 // Sets server port and logs message on success
-app.listen(process.env.PORT || 1337, () => console.log('webhook is listening'));
+// app.listen(process.env.PORT || 1337, () => console.log('webhook is listening'));
 
 // Creates the endpoint for our webhook 
-app.post('/webhook', (req, res) => {  
+server.post('/webhook', (req, res) => {  
  
     let body = req.body;
   
@@ -36,7 +50,7 @@ app.post('/webhook', (req, res) => {
   });
 
   // Adds support for GET requests to our webhook
-app.get('/webhook', (req, res) => {
+  server.get('/webhook', (req, res) => {
 
     // Your verify token. Should be a random string.
     let VERIFY_TOKEN = "<YOUR_VERIFY_TOKEN>"
