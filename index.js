@@ -8,8 +8,7 @@ var https = require('https');
 var http = require('http');
 const options = {
   key: fs.readFileSync(sslDirectory + '/cvnlnode.phocode.com-acme.key', 'utf8'),
-  cert: fs.readFileSync(sslDirectory + '/cvnlnode.phocode.com-acme.cer', 'utf8'),
-  ca: fs.readFileSync(sslDirectory + '/cvnlnode.phocode.com-fullchain-acme.key'),
+  cert: fs.readFileSync(sslDirectory + '/cvnlnode.phocode.com-acme.cer', 'utf8')
 };
 
 var server = express();
