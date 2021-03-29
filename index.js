@@ -2,17 +2,20 @@
 
 // Imports dependencies and set up http server
 var sslDirectory = "/usr/local/nginx/conf/ssl/cvnlnode.phocode.com";
-const fs = require('fs');
-const app = require('express');
-const https = require('https');
+var fs = require('fs');
+var express  = require('express');
+var https = require('https');
+var http = require('http');
 const options = {
   key: fs.readFileSync(sslDirectory + '/cvnlnode.phocode.com-acme.key', 'utf8'),
- cert: fs.readFileSync(sslDirectory + '/cvnlnode.phocode.com-acme.cer', 'utf8')
+  cert: fs.readFileSync(sslDirectory + '/cvnlnode.phocode.com-acme.cer', 'utf8')
 };
 
-var server = https.createServer(options, app);
+var server = express();
+http.createServer(server).listen(8000);
+https.createServer(options, server).listen(process.env.PORT || 1337)
 
-server.listen(process.env.PORT || 1337, () => console.log('webhook is listening'));
+// server.listen(process.env.PORT || 1337, () => console.log('webhook is listening'));
 // const
 //   express = require('express'),
 //   bodyParser = require('body-parser'),
