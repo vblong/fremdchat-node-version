@@ -5,7 +5,6 @@ var sslDirectory = "/usr/local/nginx/conf/ssl/cvnlnode.phocode.com";
 const fs = require('fs');
 const app = require('express');
 const https = require('https');
-const fs = require('fs');
 const options = {
   key: fs.readFileSync(sslDirectory + '/cvnlnode.phocode.com-acme.key', 'utf8'),
  cert: fs.readFileSync(sslDirectory + '/cvnlnode.phocode.com-acme.cer', 'utf8')
