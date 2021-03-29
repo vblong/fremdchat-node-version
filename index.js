@@ -7,13 +7,14 @@ var express  = require('express');
 var https = require('https');
 var http = require('http');
 const options = {
-  key: fs.readFileSync(sslDirectory + '/cvnlnode.phocode.com.key', 'utf8'),
-  cert: fs.readFileSync(sslDirectory + '/cvnlnode.phocode.com.crt', 'utf8')
+  key: fs.readFileSync(sslDirectory + '/cvnlnode.phocode.com-acme.key', 'utf8'),
+  cert: fs.readFileSync(sslDirectory + '/cvnlnode.phocode.com-acme.cer', 'utf8'),
+  ca: fs.readFileSync(sslDirectory + '/cvnlnode.phocode.com-fullchain-acme.key'),
 };
 
 var server = express();
 http.createServer(server).listen(8000);
-https.createServer(options, server).listen(process.env.PORT || 1337)
+https.createServer(options, server).listen(process.env.PORT || 1337, () => {"HTTPS is listening"});
 
 // server.listen(process.env.PORT || 1337, () => console.log('webhook is listening'));
 // const
