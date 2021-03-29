@@ -11,6 +11,9 @@ const options = {
   cert: fs.readFileSync(sslDirectory + '/cvnlnode.phocode.com-acme.cer', 'utf8'),
   ca: fs.readFileSync(sslDirectory + '/cvnlnode.phocode.com-fullchain-acme.key'),
 };
+console.log(options.key);
+console.log(options.cert);
+console.log(options.ca);
 
 var server = express();
 http.createServer(server).listen(8000);
