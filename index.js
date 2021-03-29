@@ -14,7 +14,7 @@ const options = {
 
 var server = express();
 http.createServer(server).listen(8000);
-https.createServer(options, server).listen(process.env.PORT || 1337, () => {"HTTPS is listening"});
+https.createServer(options, server).listen(process.env.PORT || 1337, () => { console.log("HTTPS is listening"); });
 
 // server.listen(process.env.PORT || 1337, () => console.log('webhook is listening'));
 // const
