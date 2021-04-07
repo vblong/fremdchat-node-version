@@ -12,18 +12,18 @@ const options = {
 };
 
 var server = express();
-http.createServer(server).listen(process.env.PORT || 1337, () => { console.log("HTTP is listening"); });
-// https.createServer(options, server).listen(process.env.PORT || 1337, () => { console.log("HTTPS is listening"); });
+// http.createServer(server).listen(process.env.PORT || 1337, () => { console.log("HTTP is listening"); });
+// https.createServer(options, server).listen(process.env.PORT || 3000, () => { console.log("HTTPS is listening"); });
 
-// server.listen(process.env.PORT || 1337, () => console.log('webhook is listening'));
-// const
-//   express = require('express'),
-//   bodyParser = require('body-parser'),
-//   app = express().use(bodyParser.json()); // creates express http server
+server.listen(process.env.PORT || 1337, () => console.log('webhook is listening'));
+const
+  express = require('express'),
+  bodyParser = require('body-parser'),
+  app = express().use(bodyParser.json()); // creates express http server
 
 
 // Sets server port and logs message on success
-// app.listen(process.env.PORT || 1337, () => console.log('webhook is listening'));
+app.listen(process.env.PORT || 3000, () => console.log('webhook is listening'));
 
 // Creates the endpoint for our webhook 
 server.post('/webhook', (req, res) => {  
