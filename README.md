@@ -1,5 +1,5 @@
 # Fremdchat by Dating Confession
-Chatible for Vietnamese in Germany
+A clone of Chatible
 
 # Short description
 A middle-man service responsible for connecting 2 random person together and exchanging their messages.
