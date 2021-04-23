@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc --build --clean && tsc --project ./",
+    "start": "tsc --build --clean && tsc --project ./ && node ./app/main.js",
+    "start-prod": "tsc --build --clean && tsc --project ./ && node ./app/main.js production"
   },
   "repository": {
     "type": "git",
@@ -18,6 +21,9 @@
   "homepage": "https://github.com/vblong/chat-with-stranger#readme",
   "dependencies": {
     "body-parser": "^1.19.0",
-    "express": "^4.17.1"
+    "express": "^4.17.1",
+    "mysql": "^2.18.1",
+    "ts-node": "^9.1.1",
+    "typescript": "^4.2.3"
   }
 }
