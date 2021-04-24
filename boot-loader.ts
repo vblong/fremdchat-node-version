@@ -7,7 +7,7 @@ const port = 3000;
 app.listen(port, () => {
     console.log(`Service running on port ${port}`)
 });
-app.get('/', (req, res) => res.send('Hello World!'));
+app.get('/', (req, res) => res.send('<h1>Server is running</h1>'));
 
 app.post('/webhook', (req, res) => {  
  
