@@ -49,6 +49,8 @@ export class BootLoader {
           // Returns a '404 Not Found' if event is not from a page subscription
           res.sendStatus(404);
         }
+      } else {
+        res.sendStatus(404);
       }
     });
       
