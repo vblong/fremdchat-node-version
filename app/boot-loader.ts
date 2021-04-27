@@ -20,8 +20,8 @@ export class BootLoader {
     this.app.post('/webhook', (req: any, res: any) => {  
       
       let body = req.body;
-      console.log("Req===");
-      console.log(req);
+      console.log("Body===");
+      console.log(body);
       if(body !== undefined) {
         // Checks if this is an event from a page subscription
         if (body.object === 'page') {
