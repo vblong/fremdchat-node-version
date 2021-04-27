@@ -16,38 +16,40 @@ export class BootLoader {
     this.app.post('/webhook', (req: any, res: any) => {  
       
       let body = req.body;
+      if(body !== undefined) {
+        // Checks if this is an event from a page subscription
+        if (body.object === 'page') {
 
-      // Checks if this is an event from a page subscription
-      if (body.object === 'page') {
+          // Iterates over each entry - there may be multiple if batched
+          body.entry.forEach(( entry: { messaging: any[]; }) => {
 
-        // Iterates over each entry - there may be multiple if batched
-        body.entry.forEach(( entry: { messaging: any[]; }) => {
+            // Gets the body of the webhook event
+            let webhookEvent = entry.messaging[0];
+            console.log(webhookEvent);
 
-          // Gets the body of the webhook event
-          let webhookEvent = entry.messaging[0];
-          console.log(webhookEvent);
+            // Get the sender PSID
+            let senderPsid = webhookEvent.sender.id;
+            console.log('Sender PSID: ' + senderPsid);
 
-          // Get the sender PSID
-          let senderPsid = webhookEvent.sender.id;
-          console.log('Sender PSID: ' + senderPsid);
+            // Check if the event is a message or postback and
+            // pass the event to the appropriate handler function
+            if (webhookEvent.message) {
+              this.handleMessage(senderPsid, webhookEvent.message);
+            } else if (webhookEvent.postback) {
+              this.handlePostback(senderPsid, webhookEvent.postback);
+            }
+          });
 
-          // Check if the event is a message or postback and
-          // pass the event to the appropriate handler function
-          if (webhookEvent.message) {
-            this.handleMessage(senderPsid, webhookEvent.message);
-          } else if (webhookEvent.postback) {
-            this.handlePostback(senderPsid, webhookEvent.postback);
-          }
-        });
+          // Returns a '200 OK' response to all requests
+          res.status(200).send('EVENT_RECEIVED');
+        } else {
 
-        // Returns a '200 OK' response to all requests
-        res.status(200).send('EVENT_RECEIVED');
+          // Returns a '404 Not Found' if event is not from a page subscription
+          res.sendStatus(404);
+        }
       } else {
-
-        // Returns a '404 Not Found' if event is not from a page subscription
-        res.sendStatus(404);
+        res.send('Body is undefined');
       }
-      
     });
       
     // Adds support for GET requests to our webhook
