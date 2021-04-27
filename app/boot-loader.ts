@@ -54,7 +54,7 @@ export class BootLoader {
     this.app.get('/webhook', (req: any, res: any) => {
     
       // Your verify token. Should be a random string.
-      let VERIFY_TOKEN = "yeunhuphuong"
+      let VERIFY_TOKEN = "EAADTEhcxwe8BAGHMVahOpH7nk3wS9YWLQYYS3sH8U3y0dqzCs0AxwNZBi40E6ZC0bxPVJI6brwrvG5S9iqfknFt0ptZChxMjftuARKmb5gZCyiPZAKLzLS7ZCJmXIShJDNZC9ljtX8N1ZAMlNJlY1V6e5CONatpbMyCadtkhRfjCdZBT81slsaHVJfNyzsfs7LwEZD"
         
       // Parse the query params
       let mode = req.query['hub.mode'];
@@ -146,7 +146,8 @@ export class BootLoader {
   
     // The page access token we have generated in your app settings
     // const PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN;
-    const PAGE_ACCESS_TOKEN = "EAADTEhcxwe8BAFlZC46WpZAFUfHZBL6HeqBhueoViADBeZAZCf04WldMTjvmDZBrfFhax6AUlxhyo6zObSFdL6OESIL0I2eq1EUIW3x2iT7HbG7gl6w8fcUJEPXuOpXBPPL2wCCpG2dmJsffR1uOY4ICJeim9e0sFZCLGOZBCA52sqlYUuyR6ftZBbbLE2jFmuCAZD";
+    //  Token - Gia Re Bat Ngo
+    const PAGE_ACCESS_TOKEN = "EEAADTEhcxwe8BAGHMVahOpH7nk3wS9YWLQYYS3sH8U3y0dqzCs0AxwNZBi40E6ZC0bxPVJI6brwrvG5S9iqfknFt0ptZChxMjftuARKmb5gZCyiPZAKLzLS7ZCJmXIShJDNZC9ljtX8N1ZAMlNJlY1V6e5CONatpbMyCadtkhRfjCdZBT81slsaHVJfNyzsfs7LwEZD";
   
     // Construct the message body
     let requestBody = {
