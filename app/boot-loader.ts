@@ -1,5 +1,6 @@
 import express from 'express';
 import request from 'request';
+import bodyParser from 'body-parser';
 
 export class BootLoader {
   app = express();
@@ -7,6 +8,9 @@ export class BootLoader {
   _this = this;
 
   boot() {
+    this.app.use(bodyParser.urlencoded({ extended : true }));
+    this.app.use(bodyParser.json());
+
     this.app.listen(this.port, () => {
         console.log(`Service running on port ${this.port}`)
     });
