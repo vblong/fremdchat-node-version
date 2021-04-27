@@ -16,7 +16,7 @@ export class BootLoader {
     this.app.post('/webhook', (req: any, res: any) => {  
       
       let body = req.body;
-      if(body !== undefined) {
+      // if(body !== undefined) {
         // Checks if this is an event from a page subscription
         if (body.object === 'page') {
 
@@ -47,9 +47,9 @@ export class BootLoader {
           // Returns a '404 Not Found' if event is not from a page subscription
           res.sendStatus(404);
         }
-      } else {
-        res.send('Body is undefined');
-      }
+      // } else {
+      //   res.send('Body is undefined');
+      // }
     });
       
     // Adds support for GET requests to our webhook
