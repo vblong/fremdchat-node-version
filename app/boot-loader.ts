@@ -1,11 +1,8 @@
 import express from 'express';
-import request from 'request';
 import bodyParser from 'body-parser';
 import { DBManager } from './db/db-mng';
-
 import { GraphService } from './services/fb-graph-service';
 import { Messenger } from './core/messenger';
-import { PAGE_ACCESS_TOKEN } from './environment/environment-dev';
 
 export class BootLoader {
   app = express();
@@ -99,60 +96,8 @@ export class BootLoader {
       }
     });
   }
-  
-  handleMessage(senderPsid: any, receivedMessage: any) {
-    let response;
-  
-    // Checks if the message contains text
-    if (receivedMessage.text) {
-      // Create the payload for a basic text message, which
-      // will be added to the body of your request to the Send API
-      response = {
-        'text': `You sent the message: '${receivedMessage.text}'. Now send me an attachment!`
-      };
-      console.log(`User ${senderPsid} sends ${receivedMessage.text}`);      
-      this.api.sendText(senderPsid, `You sent the message: '${receivedMessage.text}'. Now send me an attachment!`);
-    } else if (receivedMessage.attachments) {
-      console.log(`User ${senderPsid} sends an attachment.`);
-      console.log(receivedMessage.attachments);
-      // Get the URL of the message attachment
-      let attachmentUrl = receivedMessage.attachments[0].payload.url;
-      response = {
-        'attachment': {
-          'type': 'image',
-          'payload': {
-            'url': attachmentUrl
-          }
-        }
-      };
-      // Send the response message
-      this.callSendAPI(senderPsid, response);
-    }  
-  }
-  
-  // Handles messaging_postbacks events
-  handlePostback(senderPsid: any, receivedPostback: any) {
-    let response;
-  
-    // Get the payload for the postback
-    let payload = receivedPostback.payload;
-  
-    // Set the response based on the postback payload
-    if (payload === 'yes') {
-      response = { 'text': 'Thanks!' };
-    } else if (payload === 'no') {
-      response = { 'text': 'Oops, try sending another image.' };
-    }
-    // Send the message to acknowledge the postback
-    this.callSendAPI(senderPsid, response);
-  }
-  
-  // Sends response messages via the Send API
-  callSendAPI(senderPsid: any, response: any) {
-    console.log(`Gonna sends to ${senderPsid} this message: ${response}`);
-    this.api.sendText(senderPsid, response);
-  }
 
+  //  Sync welcome screen
   initWelcomeScreen() {
     let requestBody = {
       "get_started": {
@@ -169,7 +114,7 @@ export class BootLoader {
         },
         {
           "locale": "de_DE",
-          "text": "Chào {{user_first_name}} đã đến với Fremdchat. Gõ 'Start' để bắt đầu."
+          "text": "Herzlich willkommen {{user_first_name}} bei Fremdchat. Geben Sie 'Start' ein, um zu beginnen"
         }
       ],
       "persistent_menu": [
@@ -177,43 +122,12 @@ export class BootLoader {
             "locale": "default",
             "composer_input_disabled": false,
             "call_to_actions": [
-                {
-                    "type": "postback",
-                    "title": "Start",
-                    "payload": "FC_START"
-                },
-                {
-                    "type": "postback",
-                    "title": "End",
-                    "payload": "FC_END"
-                },
-                {
-                    "type": "postback",
-                    "title": "Account",
-                    "payload": "FC_ACCOUNT"
-                },
-                {
-                    "type": "web_url",
-                    "title": "Shop now",
-                    "url": "https://www.originalcoastclothing.com/",
-                    "webview_height_ratio": "full"
-                }
+                {"type": "postback", "title": "Start", "payload": "FC_START"},
+                {"type": "postback", "title": "End", "payload": "FC_END"},
+                {"type": "postback", "title": "Account", "payload": "FC_ACCOUNT"}
             ]
         }
       ]
-    };
-
-    request({
-      'uri': 'https://graph.facebook.com/v10.0/me/messenger_profile',
-      'qs': { 'access_token': PAGE_ACCESS_TOKEN },
-      'method': 'POST',
-      'json': requestBody
-    }, (err, _res, _body) => {
-      if (!err) {
-        console.log(`Welcome Screen configuration result: ${_body.result}`);
-      } else {
-        console.error('Unable to send message:' + err);
-      }
-    });    
+    };      
   }
 }
