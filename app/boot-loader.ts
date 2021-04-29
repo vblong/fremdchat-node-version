@@ -1,13 +1,26 @@
 import express from 'express';
 import request from 'request';
 import bodyParser from 'body-parser';
+import { DBManager } from './db/db-mng';
+
+import { GraphService } from './services/fb-graph-service';
+import { Messenger } from './core/messenger';
+import { PAGE_ACCESS_TOKEN } from './environment/environment-dev';
 
 export class BootLoader {
   app = express();
   port = 3000;
-  _this = this;
+  db: DBManager = new DBManager();
+  api: GraphService = new GraphService();
+  msg: Messenger = new Messenger();
 
   boot() {
+    console.log(`Starting Fremdchat v2.0.0`);
+    this.db.createDBTables();
+
+    console.log(`Reconfigure welcome screen`);
+    this.initWelcomeScreen();
+
     this.app.use(bodyParser.urlencoded({ extended : true }));
     this.app.use(bodyParser.json());
 
@@ -20,8 +33,6 @@ export class BootLoader {
     this.app.post('/webhook', (req: any, res: any) => {  
       
       let body = req.body;
-      console.log("Body===");
-      console.log(body);
       if(body !== undefined) {
         // Checks if this is an event from a page subscription
         if (body.object === 'page') {
@@ -31,18 +42,20 @@ export class BootLoader {
 
             // Gets the body of the webhook event
             let webhookEvent = entry.messaging[0];
-            console.log(webhookEvent);
 
             // Get the sender PSID
-            let senderPsid = webhookEvent.sender.id;
-            console.log('Sender PSID: ' + senderPsid);
-
+            let senderPsid = webhookEvent.sender.id;                        
+            
             // Check if the event is a message or postback and
             // pass the event to the appropriate handler function
-            if (webhookEvent.message) {
-              this.handleMessage(senderPsid, webhookEvent.message);
+            if (webhookEvent.message) {  
+              if(webhookEvent.message.hasOwnProperty('quick_reply') && webhookEvent.message.quick_reply.hasOwnProperty('payload')) {     
+                this.msg.handlePostback(senderPsid, webhookEvent.message.quick_reply.payload);
+              } else {
+                this.msg.handleMessage(senderPsid, webhookEvent.message);     
+              }
             } else if (webhookEvent.postback) {
-              this.handlePostback(senderPsid, webhookEvent.postback);
+              this.msg.handlePostback(senderPsid, webhookEvent.postback.payload);
             }
           });
 
@@ -62,7 +75,7 @@ export class BootLoader {
     this.app.get('/webhook', (req: any, res: any) => {
     
       // Your verify token. Should be a random string.
-      let VERIFY_TOKEN = "EAADTEhcxwe8BAGHMVahOpH7nk3wS9YWLQYYS3sH8U3y0dqzCs0AxwNZBi40E6ZC0bxPVJI6brwrvG5S9iqfknFt0ptZChxMjftuARKmb5gZCyiPZAKLzLS7ZCJmXIShJDNZC9ljtX8N1ZAMlNJlY1V6e5CONatpbMyCadtkhRfjCdZBT81slsaHVJfNyzsfs7LwEZD"
+      let VERIFY_TOKEN = "dummytext";
         
       // Parse the query params
       let mode = req.query['hub.mode'];
@@ -97,39 +110,24 @@ export class BootLoader {
       response = {
         'text': `You sent the message: '${receivedMessage.text}'. Now send me an attachment!`
       };
+      console.log(`User ${senderPsid} sends ${receivedMessage.text}`);      
+      this.api.sendText(senderPsid, `You sent the message: '${receivedMessage.text}'. Now send me an attachment!`);
     } else if (receivedMessage.attachments) {
-  
+      console.log(`User ${senderPsid} sends an attachment.`);
+      console.log(receivedMessage.attachments);
       // Get the URL of the message attachment
       let attachmentUrl = receivedMessage.attachments[0].payload.url;
       response = {
         'attachment': {
-          'type': 'template',
+          'type': 'image',
           'payload': {
-            'template_type': 'generic',
-            'elements': [{
-              'title': 'Is this the right picture?',
-              'subtitle': 'Tap a button to answer.',
-              'image_url': attachmentUrl,
-              'buttons': [
-                {
-                  'type': 'postback',
-                  'title': 'Yes!',
-                  'payload': 'yes',
-                },
-                {
-                  'type': 'postback',
-                  'title': 'No!',
-                  'payload': 'no',
-                }
-              ],
-            }]
+            'url': attachmentUrl
           }
         }
       };
-    }
-  
-    // Send the response message
-    this.callSendAPI(senderPsid, response);
+      // Send the response message
+      this.callSendAPI(senderPsid, response);
+    }  
   }
   
   // Handles messaging_postbacks events
@@ -151,32 +149,71 @@ export class BootLoader {
   
   // Sends response messages via the Send API
   callSendAPI(senderPsid: any, response: any) {
-  
-    // The page access token we have generated in your app settings
-    // const PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN;
-    //  Token - Gia Re Bat Ngo
-    const PAGE_ACCESS_TOKEN = "EEAADTEhcxwe8BAGHMVahOpH7nk3wS9YWLQYYS3sH8U3y0dqzCs0AxwNZBi40E6ZC0bxPVJI6brwrvG5S9iqfknFt0ptZChxMjftuARKmb5gZCyiPZAKLzLS7ZCJmXIShJDNZC9ljtX8N1ZAMlNJlY1V6e5CONatpbMyCadtkhRfjCdZBT81slsaHVJfNyzsfs7LwEZD";
-  
-    // Construct the message body
+    console.log(`Gonna sends to ${senderPsid} this message: ${response}`);
+    this.api.sendText(senderPsid, response);
+  }
+
+  initWelcomeScreen() {
     let requestBody = {
-      'recipient': {
-        'id': senderPsid
+      "get_started": {
+        "payload": "fc_welcome"
       },
-      'message': response
+      "greeting": [
+        {
+          "locale": "default",
+          "text": "Chào {{user_first_name}} đã đến với Fremdchat. Gõ 'Start' để bắt đầu."
+        },
+        {
+          "locale": "vi_VN",
+          "text": "Chào {{user_first_name}} đã đến với Fremdchat. Gõ 'Start' để bắt đầu."
+        },
+        {
+          "locale": "de_DE",
+          "text": "Chào {{user_first_name}} đã đến với Fremdchat. Gõ 'Start' để bắt đầu."
+        }
+      ],
+      "persistent_menu": [
+        {
+            "locale": "default",
+            "composer_input_disabled": false,
+            "call_to_actions": [
+                {
+                    "type": "postback",
+                    "title": "Start",
+                    "payload": "FC_START"
+                },
+                {
+                    "type": "postback",
+                    "title": "End",
+                    "payload": "FC_END"
+                },
+                {
+                    "type": "postback",
+                    "title": "Account",
+                    "payload": "FC_ACCOUNT"
+                },
+                {
+                    "type": "web_url",
+                    "title": "Shop now",
+                    "url": "https://www.originalcoastclothing.com/",
+                    "webview_height_ratio": "full"
+                }
+            ]
+        }
+      ]
     };
-  
-    // Send the HTTP request to the Messenger Platform
+
     request({
-      'uri': 'https://graph.facebook.com/v10.0/me/messages',
+      'uri': 'https://graph.facebook.com/v10.0/me/messenger_profile',
       'qs': { 'access_token': PAGE_ACCESS_TOKEN },
       'method': 'POST',
       'json': requestBody
     }, (err, _res, _body) => {
       if (!err) {
-        console.log('Message sent!');
+        console.log(`Welcome Screen configuration result: ${_body.result}`);
       } else {
         console.error('Unable to send message:' + err);
       }
-    });
+    });    
   }
 }
