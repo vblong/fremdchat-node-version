@@ -99,30 +99,15 @@ export class DBManager {
         });
     }
 
-
-    async loadServerStatus() {
-        //  TODO - maybe not do it
-        // return new Promise((resolve, reject) => {
-        //     let query = `SELECT ID, inChat, inQueue, partnerID, birthYear, ageMin, ageMax, gender, orientation, startFrom, matchFrom  FROM users WHERE `;
-        //     this.queryP(query)
-        //     .then((result: any) => {
-        //         resolve(result);
-        //     })
-        //     .catch((err: any) => {
-        //         reject(err);
-        //     });
-        // });
-    }
-    
     updateUserProfile(info: any) {
-        return new Promise((resolve, reject) => {   
+        return new Promise(async (resolve, reject) => {   
             let query = `SELECT ID FROM users WHERE ID = ${info.id}`;
-            this.queryP(query)
-            .then((result: any) => {
-                resolve(result);
+            await this.queryP(query)
+            .then(async (result: any) => {
                 if(result.length == 0) {
-                    this.addNewUser(info);
+                    await this.addNewUser(info);
                 }
+                resolve(result);
             })
             .catch((err: any) => {
                 reject(err);
@@ -131,17 +116,25 @@ export class DBManager {
     }
 
     addNewUser(info: any) {
-        console.log(`Gonna add this user to DB ${info}`);
-        let ID = info.id;
-        let NAME = '';
-        if(info.hasOwnProperty('first_name')) NAME += info.first_name;
-        if(info.hasOwnProperty('last_name')) NAME += ' ' + info.last_name;
-        let GENDER = 0;
-        if(info.hasOwnProperty('gender') && info.gender === "male") GENDER = 1;
-        else if(info.hasOwnProperty('gender') && info.gender === "female") GENDER = 2;
+        return new Promise((resolve, reject) => {
+            console.log(`Gonna add this user to DB ${info.id} - ${info.first_name} ${info.last_name} - ${info.gender}`);
+            let ID = info.id;
+            let NAME = '';
+            if(info.hasOwnProperty('first_name')) NAME += info.first_name;
+            if(info.hasOwnProperty('last_name')) NAME += ' ' + info.last_name;
+            let GENDER = 0;
+            if(info.hasOwnProperty('gender') && info.gender === "male") GENDER = 1;
+            else if(info.hasOwnProperty('gender') && info.gender === "female") GENDER = 2;
 
-        let query: string = `INSERT INTO users(ID, name, gender) VALUES(${ID}, "${NAME}", ${GENDER})`;
-        this.query(query);
+            let query: string = `INSERT INTO users(ID, name, gender) VALUES(${ID}, "${NAME}", ${GENDER})`;
+            this.queryP(query)
+            .then((result: any) => {
+                resolve(result);                
+            })
+            .catch((err: any) => {
+                reject(err);
+            });;
+        });        
     }
 
     getUserInfo(userid: string, columns: string[]) {
