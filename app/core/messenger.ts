@@ -16,13 +16,13 @@ export class Messenger {
         //  Check if user is in interactive mode
         let user: any = await new DBManager().getUserInfo(userid, ["inInteractive"]);
         if(user.inInteractive !== null && user.inInteractive !== 'None') {
-            this.executeDefault(userid, message.text, true);
+            this.executeDefault(userid, message, true);
         } else if(availableCmds.indexOf(message.text) > -1) {
             //  If this is a command
             this.executeCommand(userid, message.text);
         } else {
             //  Otherwise
-            this.executeDefault(userid, message.text);
+            this.executeDefault(userid, message);
         }
     }
 
@@ -37,10 +37,18 @@ export class Messenger {
          *  needs to complete his profile, and user press `Bat dau` button
          */
         if(payload === 'userCompleteProfile') {
-            let usrv: UserService = new UserService();
-            usrv.completeProfile(userid);
+            new UserService().completeProfile(userid);
+        } else if(payload.indexOf('flow_start') > -1) { 
+            this.handleMessage(userid, 'start');
         } else if(payload.indexOf('flow_findNewChat') > -1) {
-            new UserService().flow_findNewChat(userid, 1, payload);
+            if(payload.length === 'flow_findNewChat'.length) 
+                new UserService().flow_findNewChat(userid, 0);
+            else
+                new UserService().flow_findNewChat(userid, 1, payload);
+        } else if(payload.indexOf('flow_stopSearching') > -1) {
+            new UserService().flow_stopSearching(userid, 0);
+        } else if(payload.indexOf('flow_endChat') > -1) {
+            new UserService().flow_endChat(userid, 0);
         }
     }
 
@@ -60,15 +68,16 @@ export class Messenger {
         }
     }
 
-    async executeDefault(userid: string, text: string, interactive: boolean = false) {
+    async executeDefault(userid: string, message: any, interactive: boolean = false) {
         if(interactive === true) {
             let user: any = await new DBManager().getUserInfo(userid, ["inInteractive"]);
             if(user.inInteractive.indexOf('user_') > -1) {
-                new UserService().completeProfile(userid, user.inInteractive, text);
+                new UserService().completeProfile(userid, user.inInteractive, message);
             }
         } else {    
-            console.log(`User ${userid} sends ${text}`);
-            this.api.sendText(userid, text);        
+            new UserService().flow_defaultAnswer(userid, message);
+            // console.log(`User ${userid} sends ${text}`);
+            // this.api.sendText(userid, text);        
         }
     }
 }
