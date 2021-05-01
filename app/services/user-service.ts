@@ -5,6 +5,14 @@ import { GraphService } from "./fb-graph-service";
 
 export class UserService {
 
+    btns: QuickReplyButton[] = [
+        {'content_type':'text', 'title':'Ai cũng được', 'payload':'flow_findNewChat_5'},
+        {'content_type':'text', 'title':'Nam tìm nữ', 'payload':'flow_findNewChat_1'},
+        {'content_type':'text', 'title':'Nữ tìm nam', 'payload':'flow_findNewChat_2'},
+        {'content_type':'text', 'title':'Nam tìm nam', 'payload':'flow_findNewChat_3'},
+        {'content_type':'text', 'title':'Nữ tìm nữ', 'payload':'flow_findNewChat_4'}
+    ]
+
     constructor() {}
 
     /**
@@ -32,11 +40,11 @@ export class UserService {
             let result = this.checkBirthYear(message);
 
             if(result === "OK") {
-                let buttons: any[] = [
+                let buttons: StandardButton[] = [
                     {
                         'type': 'postback',
                         'title': 'Tìm bạn chat',
-                        'payload': 'user_findNewChat',
+                        'payload': 'flow_findNewChat',
                     }
                 ]
 
@@ -79,30 +87,150 @@ export class UserService {
         return result;
     }
 
-    flow_findNewChat(userid: string, step: number = 0, payload: string = '') {
+    connect(userid_1: string, userid_2: string) {
+        let db: DBManager = new DBManager();
+        db.updateUserInfo(userid_1, [
+            {'name':'inQueue', 'value': '0'},
+            {'name':'inChat', 'value': '1'},
+            {'name':'connected', 'value':'1'},
+            {'name':'partnerID', 'value':userid_2},
+            {'name':'matchFrom', 'value':'NOW()'},
+            {'name':'lastChatCount', 'value':'0'},
+            {'name':'inInteractive', 'value':'None'},            
+        ]);
+
+        db.updateUserInfo(userid_2, [
+            {'name':'inQueue', 'value': '0'},
+            {'name':'inChat', 'value': '1'},
+            {'name':'connected', 'value':'1'},
+            {'name':'partnerID', 'value':userid_1},
+            {'name':'matchFrom', 'value':'NOW()'},
+            {'name':'lastChatCount', 'value':'0'},
+            {'name':'inInteractive', 'value':'None'},            
+        ]);
+
+        let api: GraphService = new GraphService();
+        api.sendText(userid_1, `✅ Đã kết nối với một người lạ, chúc các bạn nói chuyện vui vẻ.`);
+        api.sendText(userid_2, `✅ Đã kết nối với một người lạ, chúc các bạn nói chuyện vui vẻ.`);
+    }
+
+    async flow_findNewChat(userid: string, step: number = 0, payload: string = '') {
         //  Step 0 - Sends 5 different orientation quick replies buttons
-        if(step === 0) {
-            let btns: any[] =[
-                {'content_type':'text', 'title':'Ai cũng được', 'payload':'flow_findNewChat_5'},
-                {'content_type':'text', 'title':'Nam tìm nữ', 'payload':'flow_findNewChat_1'},
-                {'content_type':'text', 'title':'Nữ tìm nam', 'payload':'flow_findNewChat_2'},
-                {'content_type':'text', 'title':'Nam tìm nam', 'payload':'flow_findNewChat_3'},
-                {'content_type':'text', 'title':'Nữ tìm nữ', 'payload':'flow_findNewChat_4'}
-            ]
-            new GraphService().sendQuickReplies(userid, 'Tìm bạn chat', btns);
+        if(step === 0) {            
+            new GraphService().sendQuickReplies(userid, 'Tìm bạn chat', this.btns);
         } else if(step === 1) {
             //  Step 1 - User presses one of the 5 quick reply matching buttons
-            new MatchMaker().matching(userid, parseInt(payload.charAt(payload.length - 1)));
+            new DBManager().updateUserInfo(userid, [{'name': 'connected', 'value': '1'}]);
+            let match: any = await new MatchMaker().matching(userid, parseInt(payload.charAt(payload.length - 1)));
+            // console.log("Match result ", match);
+            if(match.partnerid === 0) {
+                let btn: StandardButton[] = [
+                    {
+                        type: 'postback',
+                        title: 'Dừng tìm kiếm',
+                        payload: 'flow_stopSearching'
+                    }
+                ];
+                new DBManager().updateUserInfo(userid, [{'name': 'inQueue', 'value': '1'}]);
+                new GraphService().sendText(userid, '❗ Ai cũng có đôi có cặp để nói chuyện rồi, có mỗi bạn là chưa! Chờ tí nhé', btn);
+            } else {
+                this.connect(userid, match.partnerid);
+            }
         } else if(step === 2) {
             //  Step 2 - User is already in the queue
+            let btns: StandardButton[] = [
+                {
+                    type: 'postback',
+                    title: 'Dừng tìm kiếm',
+                    payload: 'flow_stopSearching'
+                }
+            ];
+            new GraphService().sendText(userid, '❗ Chờ tí chờ tí, nóng vội hỏng việc', btns);
         } else if(step === 3) {
             //  Step 3 - User is already connected with someone else
+            let btns: StandardButton[] = [
+                {
+                    type: 'postback',
+                    title: 'Ngắt kết nối',
+                    payload: 'flow_endChat'
+                }
+            ];
+            new GraphService().sendText(userid, '❗ Bạn đang được kết nối với một bạn khác.', btns);
         } else if(step === 4) {
-            //  Step 4 - User is...
+            //  Step 4 - User is in the queue and wants to stop finding
         }
     }
 
-    flow_end(userid: string, step: number = 0, payload: string = '') {
+    flow_stopSearching(userid: string, step: number = 0, payload: string = '') {
+        //  Step = 0 : user is in the queue
+        if(step === 0) {
+            new DBManager().updateUserInfo(userid, [{'name': 'inQueue', 'value': '0'}]);            
+            new GraphService().sendQuickReplies(userid, '❗ Bạn đã dừng tìm kiếm. Dùng các nút bên dưới để tìm bạn mới', this.btns);
+        }
+    }
+
+    async flow_endChat(userid_1: string, step: number = 0, payload: string = '') {
+        let db: DBManager = new DBManager();
+        let user: any = await db.getUserInfo(userid_1, ['partnerID']);        
+        let userid_2 = user.partnerID;
+        db.updateUserInfo(userid_1, [
+            {'name':'inQueue', 'value': '0'},
+            {'name':'inChat', 'value': '0'},
+            {'name':'connected', 'value':'0'},
+            {'name':'partnerID', 'value': '0'},
+            {'name':'inInteractive', 'value':'None'},            
+        ]);
+
+        db.updateUserInfo(userid_2, [
+            {'name':'inQueue', 'value': '0'},
+            {'name':'inChat', 'value': '0'},
+            {'name':'connected', 'value':'0'},
+            {'name':'partnerID', 'value': '0'},
+            {'name':'inInteractive', 'value':'None'},          
+        ]);        
+
+        let api: GraphService = new GraphService();
+        api.sendQuickReplies(userid_1, `💔 Bạn đã thoát, dùng các nút bên dưới để tìm bạn mới.`, this.btns);
+        api.sendQuickReplies(userid_2, `💔 Đối phương đã thoát, dùng các nút bên dưới để tìm bạn mới.`, this.btns);
+    }
+
+    forwardAttachments(recipient: string, attachment: any) {
+        console.log(attachment);
+        attachment.forEach((element: any) => {
+            if(element.hasOwnProperty('type') && element.type === 'image') {
+                let payload: any = element.payload;
+                if(payload.hasOwnProperty('sticker_id')) {
+                    //  It's a sticker
+                    // new GraphService().sendAttachment(recipient, "image", {'url': payload.url, 'sticker_id':payload.sticker_id});
+                    new GraphService().sendAttachment(recipient, "image", {'url': payload.url});
+                } else {
+                    //  Normal image
+                    new GraphService().sendAttachment(recipient, "image", {'url': payload.url});
+                }
+            }
+        });
+    }
+
+    forwardMessage(recipient: string, message: any) {
+        if(message.hasOwnProperty('attachments'))
+            this.forwardAttachments(recipient, message.attachments);
+        if(message.hasOwnProperty('text'))
+            new GraphService().sendText(recipient, message.text);
+    }
+
+    async flow_defaultAnswer(userid: string, message: string) {
+        let user: any = await new DBManager().getUserInfo(userid, ['connected', 'partnerID']);
+        //  User has not joined yet
+        if(user.connected === 0) {
+            new GraphService().sendQuickReplies(userid, '❗ Bạn chưa đăng kí tìm kiếm. Dùng các nút bên dưới để tìm bạn mới', this.btns);
+        } else {
+            //  User is connected with someone else -> Exchange their message
+            console.log(`User ${userid} sends ${user.partnerID}: ${message}`);
+            this.forwardMessage(user.partnerID, message);
+        }
+    }
+
+    flow_start(userid: string, step: number = 0, payload: string = '') {
 
     }
 }
