@@ -20,6 +20,21 @@ export class GraphService {
       }); 
     }
 
+    sendUserSetting(requestBody: any) {
+      request({
+          'uri': `https://graph.facebook.com/${GRAPH_API_VERSION}/me/custom_user_settings`,
+          'qs': { 'access_token': PAGE_ACCESS_TOKEN },
+          'method': 'POST',
+          'json': requestBody
+        }, (err, _res, _body) => {
+          if (!err) {
+            console.log(`Request result: success`);
+          } else {
+            console.error('Unable to send message:' + err);
+          }
+      }); 
+    }
+
     sendText(recipient: string, content: string, buttons: any[] = []) {      
       let requestBody: any = {
         'recipient': {
@@ -47,6 +62,21 @@ export class GraphService {
           }
         };
       }
+      this.sendRequest("messages", requestBody);
+    }
+
+    sendAttachment(recipient: string, type: string, payload: any) {      
+      let requestBody: any = {
+        'recipient': {
+          'id': recipient
+        },
+        'message': {
+          "attachment": {
+            "type": type,
+            "payload": payload
+          }
+        }
+      };      
       this.sendRequest("messages", requestBody);
     }
 
