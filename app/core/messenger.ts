@@ -49,6 +49,8 @@ export class Messenger {
             new UserService().flow_stopSearching(userid, 0);
         } else if(payload.indexOf('flow_endChat') > -1) {
             new UserService().flow_endChat(userid, 0);
+        } else if(payload.indexOf('flow_welcome') > -1) {
+            new UserService().flow_welcome(userid, 0);
         }
     }
 
@@ -75,9 +77,7 @@ export class Messenger {
                 new UserService().completeProfile(userid, user.inInteractive, message);
             }
         } else {    
-            new UserService().flow_defaultAnswer(userid, message);
-            // console.log(`User ${userid} sends ${text}`);
-            // this.api.sendText(userid, text);        
+            new UserService().flow_defaultAnswer(userid, 0, message);
         }
     }
 }
