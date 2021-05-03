@@ -13,10 +13,11 @@ export class BootLoader {
 
   boot() {
     console.log(`Starting Fremdchat v2.0.0`);
-    this.db.createDBTables();
+    this.db.createDBTables();    
 
-    console.log(`Reconfigure welcome screen`);
-    this.initWelcomeScreen();
+    this.syncWelcomeScreen();
+
+    this.syncPersistentMenu();
 
     this.app.use(bodyParser.urlencoded({ extended : true }));
     this.app.use(bodyParser.json());
@@ -27,7 +28,7 @@ export class BootLoader {
     
     this.app.get('/', (req: any, res: any) => res.send('<h1>Server is running</h1>'));
       
-    this.app.post('/webhook', (req: any, res: any) => {  
+    this.app.post('/webhook', async (req: any, res: any) => {  
       
       let body = req.body;
       if(body !== undefined) {
@@ -35,7 +36,7 @@ export class BootLoader {
         if (body.object === 'page') {
 
           // Iterates over each entry - there may be multiple if batched
-          body.entry.forEach(( entry: { messaging: any[]; }) => {
+          body.entry.forEach(async ( entry: { messaging: any[]; }) => {
 
             // Gets the body of the webhook event
             let webhookEvent = entry.messaging[0];
@@ -43,6 +44,33 @@ export class BootLoader {
             // Get the sender PSID
             let senderPsid = webhookEvent.sender.id;                        
             
+            let user: any = await new DBManager().getUserInfo(senderPsid, ["inInteractive"]);
+            //  User does not exist in DB
+            //  Create new in DB
+            if(user === undefined) {  
+              //  Get user info 
+              let info: any = await new GraphService().getUserInfo(senderPsid);        
+              if(info.hasOwnProperty('id') === false) {    
+                  console.log("Có lỗi xảy ra. Vui lòng thử lại.");
+                  new GraphService().sendText(senderPsid, "Có lỗi xảy ra. Vui lòng thử lại.");
+                  return false;    
+              }       
+              
+              //  Sync persistent menu
+              console.log(`Reconfigure welcome screen`);
+              this.syncPersistentMenu(senderPsid);
+            
+              //  Update user info on DB
+              await new DBManager().updateUserProfile(info); 
+            } else {
+              //  User already exists, update (without synchronous)
+              let info: any = new GraphService().getUserInfo(senderPsid);        
+              if(info.hasOwnProperty('id') !== false) {    
+                //  Update user info on DB
+                new DBManager().updateUserProfile(info); 
+              }                     
+            }            
+
             // Check if the event is a message or postback and
             // pass the event to the appropriate handler function
             if (webhookEvent.message) {  
@@ -98,36 +126,47 @@ export class BootLoader {
   }
 
   //  Sync welcome screen
-  initWelcomeScreen() {
+  syncWelcomeScreen() {
     let requestBody = {
       "get_started": {
-        "payload": "fc_welcome"
+        "payload": "flow_welcome"
       },
       "greeting": [
         {
           "locale": "default",
-          "text": "Chào {{user_first_name}} đã đến với Fremdchat. Gõ 'Start' để bắt đầu."
+          "text": "Chào {{user_first_name}} đã đến với Fremdchat. Nhấp vào nút bên dưới để bắt đầu."
         },
         {
           "locale": "vi_VN",
-          "text": "Chào {{user_first_name}} đã đến với Fremdchat. Gõ 'Start' để bắt đầu."
+          "text": "Chào {{user_first_name}} đã đến với Fremdchat. Nhấp vào nút bên dưới để bắt đầu."
         },
         {
           "locale": "de_DE",
-          "text": "Herzlich willkommen {{user_first_name}} bei Fremdchat. Geben Sie 'Start' ein, um zu beginnen"
+          "text": "Herzlich willkommen {{user_first_name}} bei Fremdchat. Drücken Sie die Taste, um zu starten"
         }
-      ],
+      ]
+    };
+    new GraphService().sendRequest("messenger_profile", requestBody);
+    console.log('Synching welcome screen...');    
+  }
+
+  //  Sync Persistent Menu
+  syncPersistentMenu(userid: string = '') {
+    let requestBody = {      
+      // "psid": userid,
       "persistent_menu": [
         {
             "locale": "default",
             "composer_input_disabled": false,
             "call_to_actions": [
-                {"type": "postback", "title": "Start", "payload": "FC_START"},
-                {"type": "postback", "title": "End", "payload": "FC_END"},
-                {"type": "postback", "title": "Account", "payload": "FC_ACCOUNT"}
+                {"type": "postback", "title": "Start - Tìm bạn mới", "payload": "flow_findNewChat"},
+                {"type": "postback", "title": "End - Kết thúc cuộc nói chuyện", "payload": "flow_endChat"},
+                {"type": "postback", "title": "Account - Xem tài khoản", "payload": "flow_account"}
             ]
         }
       ]
-    };      
+    }; 
+    new GraphService().sendRequest("messenger_profile", requestBody);
+    console.log("Synching persistent menu...");
   }
 }
