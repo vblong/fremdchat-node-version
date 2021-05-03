@@ -16,8 +16,10 @@ export class MatchMaker {
         let user: any = await db.getUserInfo(userid, USER_INFO_MATCHING_COLS);
 
         if(user.hasOwnProperty('inChat') && user.inChat === 1) {
+            //  User is already connected with someone else
             new UserService().flow_findNewChat(userid, 3);
         } else if(user.hasOwnProperty('inQueue') && user.inQueue === 1) {
+            //  User is in the queue
             new UserService().flow_findNewChat(userid, 2);
         } else {
             return await this.search(user);
